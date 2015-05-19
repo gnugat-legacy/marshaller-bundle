@@ -1,4 +1,4 @@
-# Marshaller Bundle
+# Marshaller Bundle [![SensioLabsInsight](https://insight.sensiolabs.com/projects/3ed6f368-d2de-4eb8-a115-d872adda8c7e/ ini.png)](https://insight.sensiolabs.com/projects/3ed6f368-d2de-4eb8-a115-d872adda8c7e) [![Travis CI](https://travis-ci.org/gnugat/marshaller-bundle.png)](https://travis-ci.org/gnugat/marshaller-bundle)
 
 [Marshaller](http://gnugat.github.io/marshaller) integration in [Symfony](http://symfony.com).
 
