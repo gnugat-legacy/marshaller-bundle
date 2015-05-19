@@ -1,0 +1,3 @@
+services:
+    gnugat_marshaller.marshaller:
+        class: Gnugat\Marshaller\Marshaller

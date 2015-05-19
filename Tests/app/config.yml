@@ -1,0 +1,13 @@
+framework:
+    secret: "Three can keep a secret, if two of them are dead."
+
+services:
+    app.article_marshaller:
+        class: Gnugat\MarshallerBundle\Tests\Fixtures\ArticleMarshaller
+        tags:
+            - { name: gnugat_marshaller }
+
+    app.partial_article_marshaller:
+        class: Gnugat\MarshallerBundle\Tests\Fixtures\PartialArticleMarshaller
+        tags:
+            - { name: gnugat_marshaller, priority: 1 }
