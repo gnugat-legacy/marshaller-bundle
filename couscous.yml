@@ -1,0 +1,17 @@
+template:
+    url: https://github.com/CouscousPHP/Template-Light.git
+
+baseUrl: http://gnugat.github.io/marshaller-bundle
+
+title: MarshallerBundle
+subTitle: Marshaller integration in Symfony.
+
+github:
+    user: gnugat
+    repo: marshaller-bundle
+
+menu:
+    items:
+        home:
+            text: Home
+            relativeUrl:

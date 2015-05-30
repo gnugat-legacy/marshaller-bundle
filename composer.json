@@ -3,7 +3,7 @@
     "type": "symfony-bundle",
     "description": "Marshaller integration in Symfony",
     "keywords": ["marshaller", "converter", "translator","serializer", "bundle", "symfony"],
-    "homepage": "https://github.com/gnugat/marshaller-bundle",
+    "homepage": "https://gnugat.github.io/marshaller-bundle",
     "license": "MIT",
     "authors": [
         {
