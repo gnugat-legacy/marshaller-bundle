@@ -134,7 +134,7 @@ class ArtcileController extends Controller
     {
         $articles = $this->get('app.article_repository')->findAll();
 
-        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshal($articles), 200);
+        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshalCollection($articles), 200);
     }
 
     /**
@@ -220,7 +220,7 @@ class ArtcileController extends Controller
     {
         $articles = $this->get('app.article_repository')->findAll();
 
-        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshal($articles 'partial'), 200);
+        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshalCollection($articles, 'partial'), 200);
     }
 
     /**
