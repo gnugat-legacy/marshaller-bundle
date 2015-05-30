@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <title>MarshallerBundle</title>
+
+        <link rel="stylesheet" href="http://gnugat.github.io/marshaller-bundle/css/bootstrap.min.css">
+        <link rel="stylesheet" href="http://gnugat.github.io/marshaller-bundle/css/font-awesome.min.css">
+        <link rel="stylesheet" href="http://gnugat.github.io/marshaller-bundle/css/highlight.dark.css">
+        <link rel="stylesheet" href="http://gnugat.github.io/marshaller-bundle/css/main.css">
+    </head>
+    <body>
+
+        <header class="navbar navbar-default navbar-fixed-top">
+
+            <a class="navbar-brand" href="http://gnugat.github.io/marshaller-bundle/">
+                MarshallerBundle
+                <small class="hidden-xs hidden-sm">
+                    Marshaller integration in Symfony.
+                </small>
+            </a>
+
+                            <a href="https://github.com/gnugat/marshaller-bundle">
+                    <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
+                </a>
+            
+        </header>
+
+        <main class="container-fluid">
+            <div class="row">
+
+                
+                    <nav id="sidebar" class="col-sm-3 col-lg-2" role="navigation">
+
+                        <ul class="nav nav-pills nav-stacked">
+                                                            <li class="">
+                                    <a href="http://gnugat.github.io/marshaller-bundle/">
+                                        Home
+                                    </a>
+                                </li>
+                                                    </ul>
+
+                    </nav>
+
+                
+                <section id="content" class="col-sm-offset-3 col-lg-offset-2 col-sm-9 col-lg-10">
+                    <h1>Marshaller Bundle <a href="https://insight.sensiolabs.com/projects/3ed6f368-d2de-4eb8-a115-d872adda8c7e"><img src="https://insight.sensiolabs.com/projects/3ed6f368-d2de-4eb8-a115-d872adda8c7e/mini.png" alt="SensioLabsInsight" /></a> <a href="https://travis-ci.org/gnugat/marshaller-bundle"><img src="https://travis-ci.org/gnugat/marshaller-bundle.png" alt="Travis CI" /></a></h1>
+<p><a href="http://gnugat.github.io/marshaller">Marshaller</a> integration in <a href="http://symfony.com">Symfony</a>.</p>
+<h2>Installation</h2>
+<p>MarshallerBundle can be installed using <a href="http://getcomposer.org/">Composer</a>:</p>
+<pre><code>composer require "gnugat/marshaller-bundle:~2.0"</code></pre>
+<p>We then need to register it in our application:</p>
+<pre><code class="language-php">&lt;?php
+// File: app/AppKernel.php
+
+use Symfony\Component\HttpKernel\Kernel;
+use Symfony\Component\Config\Loader\LoaderInterface;
+
+class AppKernel extends Kernel
+{
+    public function registerBundles()
+    {
+        $bundles = array(
+            // ...
+            new Gnugat\MarshallerBundle\GnugatMarshallerBundle(),
+        );
+        // ...
+    }
+
+    // ...
+}</code></pre>
+<h2>Simple conversion</h2>
+<p>Let's take the following object:</p>
+<pre><code class="language-php">&lt;?php
+// File: src/AppBundle/Entity/Article.php
+
+namespace AppBundle\Entity;
+
+class Article
+{
+    public function __construct($title, $content)
+    {
+        $this-&gt;title = $title;
+        $this-&gt;content = $content;
+    }
+
+    public function getTitle()
+    {
+        return $this-&gt;title;
+    }
+
+    public function getContent()
+    {
+        return $this-&gt;content;
+    }
+}</code></pre>
+<p>If we want to convert it to the following format:</p>
+<pre><code class="language-php">array(
+    'title' =&gt; 'Nobody expects...',
+    'content' =&gt; '... The Spanish Inquisition!',
+);</code></pre>
+<p>Then we have first to create a <code>MarshallerStrategy</code>:</p>
+<pre><code class="language-php">&lt;?php
+// File: src/AppBundle/Marshaller/ArticleMarshaller.php
+
+use AppBundle\Entity\Article;
+use Gnugat\Marshaller\MarshallerStrategy;
+
+class ArticleMarshaller implements MarshallerStrategy
+{
+    public function supports($toMarshal, $category = null)
+    {
+        return $toMarshal instanceof Article;
+    }
+
+    public function marshal($toMarshal)
+    {
+        return array(
+            'title' =&gt; $toMarshal-&gt;getTitle(),
+            'content' =&gt; $toMarshal-&gt;getContent(),
+        );
+    }
+}</code></pre>
+<p>The second step is to define it as a service:</p>
+<pre><code># File: app/config/services.yml
+services:
+    app.article_marshaller:
+        class: AppBundle\Marshaller\ArticleMarshaller
+        tags:
+            - { name: gnugat_marshaller }</code></pre>
+<blockquote>
+<p><strong>Note</strong>: Thanks to the <code>gnugat_marshaller</code> tag, the <code>ArticleMarshaller</code> will
+be registered in the main <code>gnugat_marshaller.marshaller</code> service.</p>
+</blockquote>
+<p>Finally we can actually convert the object:</p>
+<pre><code class="language-php">&lt;?php
+// File: src/AppBundle/Controller/ArticleController.php
+
+namespace AppBundle\Controller;
+
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
+
+class ArtcileController extends Controller
+{
+    /**
+     * @Route("/api/v1/articles")
+     * @Method({"GET"})
+     */
+    public function listAction()
+    {
+        $articles = $this-&gt;get('app.article_repository')-&gt;findAll();
+
+        return new JsonResponse($this-&gt;get('gnugat_marshaller.marshaller')-&gt;marshal($articles), 200);
+    }
+
+    /**
+     * @Route("/api/v1/articles/{id}")
+     * @Method({"GET"})
+     */
+    public function viewAction(Article $article)
+    {
+        return new JsonResponse($this-&gt;get('gnugat_marshaller.marshaller')-&gt;marshal($article), 200);
+    }
+}</code></pre>
+<blockquote>
+<p><strong>Note</strong>: <code>gnugat_marshaller.marshaller</code> can also call the <code>ArticleMarshaller</code>
+on <code>Article</code> collections.</p>
+</blockquote>
+<h2>Partial conversions</h2>
+<p>If we need to convert <code>Article</code> into the following format:</p>
+<pre><code class="language-php">array('title' =&gt; 'Nobody expects...');</code></pre>
+<p>Then we first have to define a new <code>MarshallStrategy</code>:</p>
+<pre><code class="language-php">// File: src/AppBundle/Marshaller/ArticleMarshaller.php
+
+use AppBundle\Entity\Article;
+use Gnugat\Marshaller\MarshallStrategy;
+
+class PartialArticleMarshaller implements MarshallStrategy
+{
+    public function supports($toMarshal, $category = null)
+    {
+        return $toMarshal instanceof Article &amp;&amp; 'partial' === $category;
+    }
+
+    public function marshal($toMarshal)
+    {
+        return array(
+            'title' =&gt; $toMarshal-&gt;getTitle(),
+        );
+    }
+}</code></pre>
+<p>Since this <code>MarshallerStrategy</code> has a more restrictive <code>support</code> condition, we'd
+like it to be checked before <code>ArticleMarshaller</code>. This can be done by registering
+<code>PartialArticleMarshaller</code> with a higher priority than <code>ArticleMarshaller</code>
+(in this case with a priority higher than 0):</p>
+<pre><code class="language-php"># File: app/config/services.yml
+services:
+    app.article_marshaller:
+        class: AppBundle\Marshaller\PartialArticleMarshaller
+        tags:
+            - { name: gnugat_marshaller, priority: 1 }</code></pre>
+<p>Finally we can call <code>Marshaller</code>, for the <code>partial</code> category:</p>
+<pre><code class="language-php">&lt;?php
+// File: src/AppBundle/Controller/ArticleController.php
+
+namespace AppBundle\Controller;
+
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
+use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
+
+class ArtcileController extends Controller
+{
+    /**
+     * @Route("/api/v1/articles")
+     * @Method({"GET"})
+     */
+    public function listAction()
+    {
+        $articles = $this-&gt;get('app.article_repository')-&gt;findAll();
+
+        return new JsonResponse($this-&gt;get('gnugat_marshaller.marshaller')-&gt;marshal($articles 'partial'), 200);
+    }
+
+    /**
+     * @Route("/api/v1/articles/{id}")
+     * @Method({"GET"})
+     */
+    public function viewAction(Article $article)
+    {
+        return new JsonResponse($this-&gt;get('gnugat_marshaller.marshaller')-&gt;marshal($article), 200);
+    }
+}</code></pre>
+<h2>Further documentation</h2>
+<p>You can see the current and past versions using one of the following:</p>
+<ul>
+<li>the <code>git tag</code> command</li>
+<li>the <a href="https://github.com/gnugat/marshaller/releases">releases page on Github</a></li>
+<li>the file listing the <a href="CHANGELOG.html">changes between versions</a></li>
+</ul>
+<p>You can find more documentation at the following links:</p>
+<ul>
+<li><a href="LICENSE">copyright and MIT license</a></li>
+<li><a href="VERSIONING.html">versioning and branching models</a></li>
+<li><a href="CONTRIBUTING.html">contribution instructions</a></li>
+</ul>
+                </section>
+
+            </div>
+        </main>
+
+        <footer>
+            <div class="container-fluid">
+                <p class="text-muted">
+                    website generated with <a href="http://couscous.io" title="Markdown website generator">Couscous</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
+        <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+        <script src="http://yastatic.net/highlightjs/8.2/highlight.min.js"></script>
+
+        <script>
+            $(function() {
+                $("section>h1").wrap('<div class="page-header" />');
+                // Syntax highlighting
+                hljs.initHighlightingOnLoad();
+            });
+        </script>
+
+    </body>
+</html>

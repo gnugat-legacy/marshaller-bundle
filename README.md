@@ -1,249 +1,65 @@
-# Marshaller Bundle [![SensioLabsInsight](https://insight.sensiolabs.com/projects/3ed6f368-d2de-4eb8-a115-d872adda8c7e/mini.png)](https://insight.sensiolabs.com/projects/3ed6f368-d2de-4eb8-a115-d872adda8c7e) [![Travis CI](https://travis-ci.org/gnugat/marshaller-bundle.png)](https://travis-ci.org/gnugat/marshaller-bundle)
+---
+currentMenu: home
+---
+# Couscous Light template
 
-[Marshaller](http://gnugat.github.io/marshaller) integration in [Symfony](http://symfony.com).
+![](screenshot.png)
 
-## Installation
+## Usage
 
-MarshallerBundle can be installed using [Composer](http://getcomposer.org/):
+To use the template, set it up in your `couscous.yml` configuration file:
 
-    composer require "gnugat/marshaller-bundle:~2.0"
-
-We then need to register it in our application:
-
-```php
-<?php
-// File: app/AppKernel.php
-
-use Symfony\Component\HttpKernel\Kernel;
-use Symfony\Component\Config\Loader\LoaderInterface;
-
-class AppKernel extends Kernel
-{
-    public function registerBundles()
-    {
-        $bundles = array(
-            // ...
-            new Gnugat\MarshallerBundle\GnugatMarshallerBundle(),
-        );
-        // ...
-    }
-
-    // ...
-}
+```yaml
+template:
+    url: https://github.com/CouscousPHP/Template-Light
 ```
 
-## Simple conversion
+## Configuration
 
-Let's take the following object:
+Here are all the variables you can set in your `couscous.yml`:
 
-```php
-<?php
-// File: src/AppBundle/Entity/Article.php
+```yaml
+# Base URL of the published website
+baseUrl: http://username.github.io/project
 
-namespace AppBundle\Entity;
+# Used to link to the GitHub project
+github:
+    user: myself
+    repo: my-project
 
-class Article
-{
-    public function __construct($title, $content)
-    {
-        $this->title = $title;
-        $this->content = $content;
-    }
+title: My project
+subTitle: This is a great project.
 
-    public function getTitle()
-    {
-        return $this->title;
-    }
-
-    public function getContent()
-    {
-        return $this->content;
-    }
-}
+# The left menu bar
+menu:
+    items:
+        home:
+            text: Home page
+            # You can use relative urls
+            relativeUrl: doc/faq.html
+        foo:
+            text: Another link
+            # Or absolute urls
+            absoluteUrl: https://example.com
 ```
 
-If we want to convert it to the following format:
+Note that the menu items can also contain HTML:
 
-```php
-array(
-    'title' => 'Nobody expects...',
-    'content' => '... The Spanish Inquisition!',
-);
+```yaml
+home:
+    text: "<i class=\"fa fa-github\"></i> Home page"
+    relativeUrl: doc/faq.html
 ```
 
-Then we have first to create a `MarshallerStrategy`:
+## Menu
 
-```php
-<?php
-// File: src/AppBundle/Marshaller/ArticleMarshaller.php
+To set the current menu item (i.e. highlighted menu item), set the `currentMenu`
+key in the Markdown files:
 
-use AppBundle\Entity\Article;
-use Gnugat\Marshaller\MarshallerStrategy;
+```markdown
+---
+currentMenu: home
+---
 
-class ArticleMarshaller implements MarshallerStrategy
-{
-    public function supports($toMarshal, $category = null)
-    {
-        return $toMarshal instanceof Article;
-    }
-
-    public function marshal($toMarshal)
-    {
-        return array(
-            'title' => $toMarshal->getTitle(),
-            'content' => $toMarshal->getContent(),
-        );
-    }
-}
+# Welcome
 ```
-
-The second step is to define it as a service:
-
-```
-# File: app/config/services.yml
-services:
-    app.article_marshaller:
-        class: AppBundle\Marshaller\ArticleMarshaller
-        tags:
-            - { name: gnugat_marshaller }
-```
-
-> **Note**: Thanks to the `gnugat_marshaller` tag, the `ArticleMarshaller` will
-> be registered in the main `gnugat_marshaller.marshaller` service.
-
-Finally we can actually convert the object:
-
-```php
-<?php
-// File: src/AppBundle/Controller/ArticleController.php
-
-namespace AppBundle\Controller;
-
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Symfony\Component\HttpFoundation\JsonResponse;
-
-class ArtcileController extends Controller
-{
-    /**
-     * @Route("/api/v1/articles")
-     * @Method({"GET"})
-     */
-    public function listAction()
-    {
-        $articles = $this->get('app.article_repository')->findAll();
-
-        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshal($articles), 200);
-    }
-
-    /**
-     * @Route("/api/v1/articles/{id}")
-     * @Method({"GET"})
-     */
-    public function viewAction(Article $article)
-    {
-        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshal($article), 200);
-    }
-}
-```
-
-> **Note**: `gnugat_marshaller.marshaller` can also call the `ArticleMarshaller`
-> on `Article` collections.
-
-## Partial conversions
-
-If we need to convert `Article` into the following format:
-
-```php
-array('title' => 'Nobody expects...');
-```
-
-Then we first have to define a new `MarshallStrategy`:
-
-```php
-// File: src/AppBundle/Marshaller/ArticleMarshaller.php
-
-use AppBundle\Entity\Article;
-use Gnugat\Marshaller\MarshallStrategy;
-
-class PartialArticleMarshaller implements MarshallStrategy
-{
-    public function supports($toMarshal, $category = null)
-    {
-        return $toMarshal instanceof Article && 'partial' === $category;
-    }
-
-    public function marshal($toMarshal)
-    {
-        return array(
-            'title' => $toMarshal->getTitle(),
-        );
-    }
-}
-```
-
-Since this `MarshallerStrategy` has a more restrictive `support` condition, we'd
-like it to be checked before `ArticleMarshaller`. This can be done by registering
-`PartialArticleMarshaller` with a higher priority than `ArticleMarshaller`
-(in this case with a priority higher than 0):
-
-```php
-# File: app/config/services.yml
-services:
-    app.article_marshaller:
-        class: AppBundle\Marshaller\PartialArticleMarshaller
-        tags:
-            - { name: gnugat_marshaller, priority: 1 }
-```
-
-Finally we can call `Marshaller`, for the `partial` category:
-
-```php
-<?php
-// File: src/AppBundle/Controller/ArticleController.php
-
-namespace AppBundle\Controller;
-
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Method;
-use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
-use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Symfony\Component\HttpFoundation\JsonResponse;
-
-class ArtcileController extends Controller
-{
-    /**
-     * @Route("/api/v1/articles")
-     * @Method({"GET"})
-     */
-    public function listAction()
-    {
-        $articles = $this->get('app.article_repository')->findAll();
-
-        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshal($articles 'partial'), 200);
-    }
-
-    /**
-     * @Route("/api/v1/articles/{id}")
-     * @Method({"GET"})
-     */
-    public function viewAction(Article $article)
-    {
-        return new JsonResponse($this->get('gnugat_marshaller.marshaller')->marshal($article), 200);
-    }
-}
-```
-
-## Further documentation
-
-You can see the current and past versions using one of the following:
-
-* the `git tag` command
-* the [releases page on Github](https://github.com/gnugat/marshaller/releases)
-* the file listing the [changes between versions](CHANGELOG.md)
-
-You can find more documentation at the following links:
-
-* [copyright and MIT license](LICENSE)
-* [versioning and branching models](VERSIONING.md)
-* [contribution instructions](CONTRIBUTING.md)
